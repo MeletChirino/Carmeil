@@ -9,6 +9,7 @@ from django.template import Template, Context
 import smtplib
 import os
 from os import getenv as venv
+from .templates import sign, message
 
 class MailType:
     HTML = 'html'
@@ -68,7 +69,7 @@ class Carmeil:
 
         if(kwargs.has_key('header'):
             self.cabecera = kwargs['header']
-        if(kwargs.has_key('template_name'):
+        if(kwargs.has_key('sign'):
             self.firma = kwargs['sign']
 
     def server_login(self):
