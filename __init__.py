@@ -24,15 +24,21 @@ class Carmeil:
         template_name
         --opt
         type
+        context
         header
         sign
+        CC
+        CCo
         """
         self.from_ = kwargs['from']
         self.to = kwargs['to']
         self.subject = kwargs['subject']
         self.template_name = template_name
 
-        self.server = smtplib.SMTP('smtp.gmail.com', 587)
+        self.server = smtplib.SMTP(
+                'smtp.gmail.com',
+                587
+                )
         self.server.ehlo()
         self.server.starttls()
         self.server.ehlo()
@@ -40,6 +46,14 @@ class Carmeil:
         self.format = MailType.TEXT
         if(kwargs.has_key('type')):
             self.format = kwargs['type']
+
+        self.CC = ''
+        if(kwargs.has_key('CC')):
+            self.format = kwargs['CC']
+
+        self.CCo = ''
+        if(kwargs.has_key('CCo')):
+            self.format = kwargs['CCo']
 
         if self.format == MailType.HTML:
             file_name = os.path.join(
@@ -49,6 +63,7 @@ class Carmeil:
             template_file = open(file_name, "r")
             self.template = Template(template_file.read())
             template_file.close()
+            self.context = kwargs['context']
 
 
         if(kwargs.has_key('header'):
@@ -69,12 +84,13 @@ class Carmeil:
             # msg = template(args)
             pass
         elif self.format == MailType.HTML:
-            context = Context({#aqui colocas el context dependiendo del template
-                "field 1": "value1",
-                "field 2": "value2",
-                }
+            context = Context(self.context)
+            html_render = smart_str(
+                self.template.render(
+                    context,
+                    encoding='utf-8'
+                    )
                 )
-            html_render = smart_str(self.template.render(context, encoding='utf-8'))
             msg = MIMEText(html_render, 'html')
 
         msg['Subject'] = self.subject
@@ -83,4 +99,13 @@ class Carmeil:
                 self.to,
                 msg.as_string()
                 )
-        print('reservas insuficientes: Email sent')
+        if (self.save == False):
+            Message(
+                sender = self.from_,
+                receiver = self.to,
+                CC = self.CC,
+                CCo = self.CCo,
+                body = self.msg['body'],
+                format = self.format
+                )
+        print('Email sent')
