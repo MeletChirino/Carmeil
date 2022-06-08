@@ -1,5 +1,6 @@
 #Email Modules
 from email.mime.text import MIMEText
+from email.message import EmailMessage
 
 #Django
 from django.utils.encoding import smart_str
@@ -13,10 +14,10 @@ from .templates import sign, message
 
 class MailType:
     HTML = 'html'
-    TEXT = 'text
+    TEXT = 'text'
 
 class Carmeil:
-    def __init__(self, from_, to, subject, template_name **kwargs):
+    def __init__(self, from_, to, subject, template_name, **kwargs):
         """
         params
         from
@@ -31,9 +32,9 @@ class Carmeil:
         CC
         CCo
         """
-        self.from_ = kwargs['from']
-        self.to = kwargs['to']
-        self.subject = kwargs['subject']
+        self.from_ = from_
+        self.to = to
+        self.subject = subject
         self.template_name = template_name
 
         self.server = smtplib.SMTP(
@@ -45,15 +46,18 @@ class Carmeil:
         self.server.ehlo()
 
         self.format = MailType.TEXT
-        if(kwargs.has_key('type')):
+        if(kwargs.get('type')):
             self.format = kwargs['type']
 
+        if(kwargs.get('content')):
+            self.content = kwargs['content']
+
         self.CC = ''
-        if(kwargs.has_key('CC')):
+        if(kwargs.get('CC')):
             self.format = kwargs['CC']
 
         self.CCo = ''
-        if(kwargs.has_key('CCo')):
+        if(kwargs.get('CCo')):
             self.format = kwargs['CCo']
 
         if self.format == MailType.HTML:
@@ -67,9 +71,9 @@ class Carmeil:
             self.context = kwargs['context']
 
 
-        if(kwargs.has_key('header'):
+        if(kwargs.get('header')):
             self.cabecera = kwargs['header']
-        if(kwargs.has_key('sign'):
+        if(kwargs.get('sign')):
             self.firma = kwargs['sign']
 
     def server_login(self):
@@ -78,11 +82,17 @@ class Carmeil:
                 venv('EMAIL_PASSWORD')
                 )
 
-    def send(self, login):
+    def send(self):
         self.server_login()
         if self.format == MailType.TEXT:
             #leer mensaje de algun template con f strings
             # msg = template(args)
+            msg = EmailMessage()
+            msg.set_content(self.content)
+            msg['Subject'] = self.subject
+            msg["From"] = self.from_
+            msg['To'] = self.to
+            self.server.send_message(msg)
             pass
         elif self.format == MailType.HTML:
             context = Context(self.context)
@@ -94,12 +104,13 @@ class Carmeil:
                 )
             msg = MIMEText(html_render, 'html')
 
-        msg['Subject'] = self.subject
-        self.server.sendmail(
-                self.from_,
-                self.to,
-                msg.as_string()
-                )
+            msg['Subject'] = self.subject
+            self.server.sendmail(
+                    self.from_,
+                    self.to,
+                    msg.as_string()
+                    )
+        '''
         if (self.save == False):
             Message(
                 sender = self.from_,
@@ -109,4 +120,6 @@ class Carmeil:
                 body = self.msg['body'],
                 format = self.format
                 )
+        #you should save all this
+        '''
         print('Email sent')
